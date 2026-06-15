@@ -1,0 +1,710 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Braze Implementation - Advanced Configurator</title>
+    <!-- Tailwind CSS for modern, clean UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .workstream-header {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 sm:p-8">
+        
+        <!-- Header -->
+        <div class="border-b border-slate-200 pb-5 mb-6">
+            <h1 class="text-3xl font-extrabold text-slate-900">Braze Implementation Configurator</h1>
+            <p class="text-sm text-slate-500 mt-1">Customize global project variables, define use case sizes, and choose scope items.</p>
+        </div>
+
+        <!-- Global Project Parameters Panel -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5 mb-6 grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">Project Duration (Weeks)</label>
+                <input type="number" id="cfg-duration" value="16" min="1" class="w-full bg-white border border-emerald-300 rounded p-2 text-sm font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500" oninput="calculateTotals()">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">Hourly Rate (€)</label>
+                <input type="number" id="cfg-rate" value="115" min="0" class="w-full bg-white border border-emerald-300 rounded p-2 text-sm font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500" oninput="calculateTotals()">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">Immersion Days</label>
+                <input type="number" id="cfg-immersion" value="1" min="0" class="w-full bg-white border border-emerald-300 rounded p-2 text-sm font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500" oninput="updateImmersionHours()">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">Hypercare Weeks</label>
+                <input type="number" id="cfg-hypercare" value="2" min="0" class="w-full bg-white border border-emerald-300 rounded p-2 text-sm font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500" oninput="updateHypercareHours()">
+            </div>
+            <div class="col-span-2 md:col-span-1">
+                <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">PM/Account Mgt (%)</label>
+                <input type="number" id="cfg-pm-pct" value="15" min="0" max="100" class="w-full bg-white border border-emerald-300 rounded p-2 text-sm font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500" oninput="calculateTotals()">
+            </div>
+        </div>
+
+        <!-- Use Case Standard Sizes Definition Panel -->
+        <div class="bg-slate-100 border border-slate-300 rounded-xl p-5 mb-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="col-span-2 md:col-span-4">
+                <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Define Hours per Use Case Size (S, M, L, XL)</h3>
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Hours for Size S</label>
+                <input type="number" id="size-s-hours" value="16" min="1" class="w-full bg-white border border-slate-300 rounded p-1.5 text-sm font-semibold text-slate-800" oninput="updateSizeHoursGlobal('S', this.value)">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Hours for Size M</label>
+                <input type="number" id="size-m-hours" value="24" min="1" class="w-full bg-white border border-slate-300 rounded p-1.5 text-sm font-semibold text-slate-800" oninput="updateSizeHoursGlobal('M', this.value)">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Hours for Size L</label>
+                <input type="number" id="size-l-hours" value="40" min="1" class="w-full bg-white border border-slate-300 rounded p-1.5 text-sm font-semibold text-slate-800" oninput="updateSizeHoursGlobal('L', this.value)">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Hours for Size XL</label>
+                <input type="number" id="size-xl-hours" value="60" min="1" class="w-full bg-white border border-slate-300 rounded p-1.5 text-sm font-semibold text-slate-800" oninput="updateSizeHoursGlobal('XL', this.value)">
+            </div>
+        </div>
+
+        <!-- DYNAMIC Named Use Cases Scope Configurator (Initially Empty) -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wider">Campaigns &amp; Use Cases Builder</h3>
+                <button onclick="addUseCase()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-4 rounded-lg transition-colors flex items-center space-x-1 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span>Add Custom Use Case</span>
+                </button>
+            </div>
+
+            <!-- Use cases rows container -->
+            <div id="use-cases-container" class="space-y-3">
+                <!-- Dynamically populated rows will land here (starts empty) -->
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Side: Interactive Table -->
+            <div class="lg:col-span-2">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-300 text-slate-600 font-semibold bg-slate-100">
+                                <th class="p-3 w-12 text-center">Use?</th>
+                                <th class="p-3">Activity / Deliverable</th>
+                                <th class="p-3">Platform</th>
+                                <th class="p-3 text-center">Roles</th>
+                                <th class="p-3 text-center" style="width: 80px;">Resources</th>
+                                <th class="p-3 text-right" style="width: 100px;">Total Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody id="estimator-table-body">
+                            <!-- Dynamic items will be injected here by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Global Select/Unselect Toggle Button -->
+                <div class="mt-4 flex justify-start">
+                    <button onclick="toggleAllTasks()" id="btn-toggle-all" class="bg-slate-700 hover:bg-slate-800 text-white font-semibold text-xs py-2 px-4 rounded-lg transition-colors shadow-sm">
+                        Select All Deliverables
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Side: Dynamic Calculator Widget -->
+            <div class="lg:col-span-1">
+                <div class="bg-slate-900 text-white rounded-xl p-6 sticky top-6 shadow-lg">
+                    <h2 class="text-xl font-bold border-b border-slate-700 pb-3 mb-4">Estimation Summary</h2>
+                    
+                    <div class="space-y-3">
+                        <!-- Subtotal Section -->
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span>Base Scope Hours:</span>
+                            <span class="font-mono font-semibold" id="summary-subtotal">0.00 hrs</span>
+                        </div>
+                        
+                        <!-- Use Cases Summary breakdown inside widget -->
+                        <div class="text-xs text-blue-350 bg-slate-800 rounded p-2 space-y-1">
+                            <span class="font-bold uppercase tracking-wider block text-[10px] text-blue-400">Included Use Cases:</span>
+                            <div class="flex justify-between">
+                                <span>Total Use Cases Hours:</span>
+                                <span class="font-mono" id="summary-uc-hours">0.00 hrs</span>
+                            </div>
+                        </div>
+
+                        <!-- Governance Overheads -->
+                        <div class="pt-2 border-t border-slate-800">
+                            <div class="flex justify-between items-center text-sm text-slate-400">
+                                <span id="summary-pm-label">Project Management (15%):</span>
+                                <span class="font-mono" id="summary-pm">0.00 hrs</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm text-slate-400 mt-1">
+                                <span id="summary-alignments-label">Weekly Alignments (3h/wk):</span>
+                                <span class="font-mono" id="summary-alignments">0.00 hrs</span>
+                            </div>
+                            <div class="flex justify-between items-center text-sm text-slate-400 mt-1">
+                                <span id="summary-steercos-label">Monthly Steercos (4h/mo):</span>
+                                <span class="font-mono" id="summary-steercos">0.00 hrs</span>
+                            </div>
+                        </div>
+
+                        <!-- Combined Grand Total -->
+                        <div class="pt-4 border-t border-slate-700 space-y-2">
+                            <div class="flex justify-between items-end">
+                                <span class="text-sm text-slate-300 font-medium">Grand Total Hours:</span>
+                                <span class="text-2xl font-bold font-mono text-emerald-400" id="summary-total-hours">0.00 hrs</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center text-slate-400 text-sm">
+                                <span>Blended Hourly Rate:</span>
+                                <span class="font-mono text-emerald-300" id="summary-current-rate">€115.00</span>
+                            </div>
+
+                            <div class="flex justify-between items-end pt-3 border-t border-slate-800">
+                                <span class="text-base text-slate-200 font-bold">Total Estimated Budget:</span>
+                                <span class="text-3xl font-extrabold font-mono text-emerald-400" id="summary-total-cost">€0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- EXPORT BUTTON -->
+                        <div class="pt-4">
+                            <button onclick="exportToCSV()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2 shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                <span>Export Current Estimate (CSV)</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript Data and Core App Logic -->
+    <script>
+        // Global Size Hour Map State (editable by user)
+        const sizeHourMap = {
+            "S": 16,
+            "M": 24,
+            "L": 40,
+            "XL": 60
+        };
+
+        // Custom Dynamic Use cases State
+        let customUseCases = [];
+
+        // All elements are unchecked (false) initially with both base hours and resource counts
+        const projectData = [
+            { type: 'header', title: "INNOVATE - Immersion & Kick-off" },
+            { id: 99, type: 'item', name: "Kick-off Session", platform: "Mixed", baseHours: 4, resources: 4, roles: "AD, PM, OC, TA", checked: false },
+            { id: 100, type: 'item', name: "Immersion Workshops", platform: "Mixed", baseHours: 24, resources: 3, roles: "PM, OC, TA", checked: false, isImmersion: true },
+
+            { type: 'header', title: "DEVELOP - Dashboard Setup" },
+            { id: 1, type: 'item', name: "Platform Enablement (Workspaces, Roles & Permissions Requirements, Admin Users)", platform: "Braze", baseHours: 8, resources: 2, roles: "OC, TA", checked: false },
+            { id: 2, type: 'item', name: "Blueprint", platform: "Braze", baseHours: 40, resources: 2, roles: "OC, TA", checked: false },
+            { id: 3, type: 'item', name: "IP Warm-up Plan", platform: "Braze", baseHours: 16, resources: 1, roles: "OC", checked: false },
+
+            { type: 'header', title: "DEVELOP - Integrations & Data Architecture Workstream" },
+            { id: 4, type: 'item', name: "Integrations & Data Landscape Overview", platform: "Mixed", baseHours: 20, resources: 3, roles: "PM, OC, TA", checked: false },
+            { id: 5, type: 'item', name: "Configure CDI (Cloud Data Ingestion) with Databricks", platform: "Braze", baseHours: 48, resources: 1, roles: "TA", checked: false },
+            { id: 6, type: 'item', name: "Configure Braze Currents with Azure (Campaign Performance)", platform: "Braze", baseHours: 16, resources: 1, roles: "TA", checked: false },
+            { id: 7, type: 'item', name: "Migrate Existing User Profiles and Channel Subscriptions (Email and SMS)", platform: "Braze", baseHours: 32, resources: 1, roles: "TA", checked: false },
+            { id: 8, type: 'item', name: "Setup Data Model (custom fields, custom events, etc...)", platform: "Braze", baseHours: 20, resources: 2, roles: "OC, TA", checked: false },
+            { id: 9, type: 'item', name: "Setup Segment Data Extract to Azure or Webhook for Direct Mail", platform: "Braze", baseHours: 8, resources: 1, roles: "TA", checked: false },
+            { id: 10, type: 'item', name: "Configure Braze Braze's Message Archiving (POS solution)", platform: "Braze", baseHours: 16, resources: 1, roles: "TA", checked: false },
+
+            { type: 'header', title: "DEVELOP - Channel Enablement / Campaign Migration Workstream" },
+            { id: 11, type: 'item', name: "Campaing & Data Planning", platform: "Braze", baseHours: 6, resources: 2, roles: "OC, TA", checked: false },
+            { id: 12, type: 'item', name: "Channel Discovery", platform: "Braze", baseHours: 12, resources: 2, roles: "OC, TA", checked: false },
+            { id: 13, type: 'item', name: "Email Channel Enablement", platform: "Braze", baseHours: 16, resources: 1, roles: "OC", checked: false },
+            { id: 14, type: 'item', name: "SMS Channel Enablement", platform: "Braze", baseHours: 16, resources: 1, roles: "OC", checked: false },
+            { id: 15, type: 'item', name: "1 x Email Master HTML Templates with up to 10 Blocks", platform: "Braze", baseHours: 24, resources: 1, roles: "HTML Specialist", checked: false },
+            { id: 16, type: 'item', name: "Add dynamic elements to the Email Master Template (stores adaptation)", platform: "Braze", baseHours: 24, resources: 1, roles: "TA", checked: false },
+
+            { type: 'header', title: "DEVELOP - QA & Testing" },
+            { id: 20, type: 'item', name: "Level 2 - Integration Testing", platform: "Braze, Azure, Databricks, Web", baseHours: 15, resources: 1, roles: "TA", checked: false },
+            { id: 21, type: 'item', name: "Level 3 - System Testing", platform: "Braze, Azure, Databricks, Web and Marketing", baseHours: 15, resources: 2, roles: "OC, TA", checked: false },
+            { id: 22, type: 'item', name: "Level 4 - UAT", platform: "Braze, Marketing Team", baseHours: 10, resources: 2, roles: "OC, TA", checked: false },
+            
+            { type: 'header', title: "DEVELOP - Rollout" },
+            { id: 23, type: 'item', name: "Setup and Development Deployment to PROD Workspace", platform: "Braze", baseHours: 38, resources: 1, roles: "OC, TA", checked: false },
+            { id: 24, type: 'item', name: "Hypercare", platform: "Braze", baseHours: 16, resources: 2, roles: "OC TA", checked: false, isHypercare: true },
+
+            { type: 'header', title: "OPERATE - Training" },
+            { id: 25, type: 'item', name: "IP Warm-up Support", platform: "Braze", baseHours: 16, resources: 1, roles: "OC", checked: false },
+            { id: 26, type: 'item', name: "Ad-hoc Email Channel Training (Pre IP Warming)", platform: "Braze", baseHours: 8, resources: 1, roles: "OC", checked: false }
+        ];
+
+        let allSelectedState = false;
+
+        // Render dynamic standard tasks table
+        function renderTable() {
+            const tableBody = document.getElementById('estimator-table-body');
+            tableBody.innerHTML = '';
+
+            const immDays = document.getElementById('cfg-immersion').value;
+            const hcWeeks = document.getElementById('cfg-hypercare').value;
+
+            projectData.forEach(item => {
+                if (item.type === 'header') {
+                    const row = document.createElement('tr');
+                    row.className = "workstream-header font-bold text-slate-700";
+                    row.innerHTML = `<td colspan="6" class="p-3 pt-6 border-b border-slate-200 text-xs tracking-wider uppercase">${item.title}</td>`;
+                    tableBody.appendChild(row);
+                } else if (item.type === 'item') {
+                    const row = document.createElement('tr');
+                    row.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
+                    
+                    let displayName = item.name;
+                    if (item.isImmersion) displayName = `Immersion Workshops (Prep included - ${immDays} Day${immDays > 1 ? 's' : ''})`;
+                    if (item.isHypercare) displayName = `Hypercare (${hcWeeks} Week${hcWeeks > 1 ? 's' : ''})`;
+
+                    const isSpecialItem = (item.isImmersion || item.isHypercare);
+                    const computedTotalHours = item.baseHours * item.resources;
+
+                    row.innerHTML = `
+                        <td class="p-3 text-center">
+                            <input type="checkbox" 
+                                   class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer" 
+                                   id="checkbox-${item.id}" 
+                                   ${item.checked ? 'checked' : ''} 
+                                   onchange="toggleItem(${item.id})">
+                        </td>
+                        <td class="p-3 font-medium text-slate-900">${displayName}</td>
+                        <td class="p-3 text-slate-500 text-xs">${item.platform}</td>
+                        
+                        <!-- Editable Roles (No complete re-renders) -->
+                        <td class="p-3 text-center">
+                            <input type="text" 
+                                   class="bg-slate-50 border border-slate-300 text-slate-700 px-2 py-1 rounded text-xs font-mono text-center w-24 focus:ring-1 focus:ring-emerald-500 focus:bg-white" 
+                                   value="${item.roles}" 
+                                   oninput="updateRoles(${item.id}, this.value)">
+                        </td>
+
+                        <!-- Editable Resources -->
+                        <td class="p-3 text-center">
+                            <input type="number" 
+                                   min="1"
+                                   ${isSpecialItem ? 'disabled class="bg-slate-100 text-slate-500 font-semibold px-2 py-1 rounded text-center w-16"' : 'class="bg-slate-50 border border-slate-300 text-slate-900 font-semibold px-2 py-1 rounded text-center w-16 focus:ring-1 focus:ring-emerald-500 focus:bg-white"'} 
+                                   value="${item.resources}" 
+                                   oninput="updateResources(${item.id}, this.value)">
+                        </td>
+                        
+                        <!-- Calculated Total Hours (Base * Resources) -->
+                        <td class="p-3 text-right font-mono font-bold text-slate-900" id="task-total-hours-${item.id}">
+                            ${computedTotalHours.toFixed(1)}
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            });
+        }
+
+        // Render custom dynamic use cases builder
+        function renderUseCases() {
+            const container = document.getElementById('use-cases-container');
+            container.innerHTML = '';
+
+            if (customUseCases.length === 0) {
+                container.innerHTML = `<p class="text-xs text-blue-500 italic text-center py-2">No custom use cases added. Click "+ Add Custom Use Case" to start.</p>`;
+                return;
+            }
+
+            customUseCases.forEach(uc => {
+                const computedUC_TotalHours = uc.hours * uc.resources;
+                const row = document.createElement('div');
+                row.className = "bg-white p-3 rounded-lg border border-blue-100 grid grid-cols-1 md:grid-cols-12 gap-3 items-center";
+                row.innerHTML = `
+                    <!-- Custom Name Input (Non-disruptive key-inputs) -->
+                    <div class="col-span-1 md:col-span-3">
+                        <input type="text" 
+                               class="w-full border border-slate-300 rounded p-1 text-sm font-semibold text-slate-800 focus:ring-1 focus:ring-blue-500" 
+                               value="${uc.name}" 
+                               placeholder="e.g. UC: Welcome Journey"
+                               oninput="updateUCFieldTextOnly(${uc.id}, 'name', this.value)">
+                    </div>
+
+                    <!-- Size select dropdown -->
+                    <div class="col-span-1 md:col-span-2">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-slate-400">Size:</span>
+                            <select class="w-full border border-slate-300 rounded p-1 text-xs font-bold text-slate-700" 
+                                    onchange="changeUCSize(${uc.id}, this.value)">
+                                <option value="S" ${uc.size === 'S' ? 'selected' : ''}>S (${sizeHourMap.S}h)</option>
+                                <option value="M" ${uc.size === 'M' ? 'selected' : ''}>M (${sizeHourMap.M}h)</option>
+                                <option value="L" ${uc.size === 'L' ? 'selected' : ''}>L (${sizeHourMap.L}h)</option>
+                                <option value="XL" ${uc.size === 'XL' ? 'selected' : ''}>XL (${sizeHourMap.XL}h)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Editable Hours -->
+                    <div class="col-span-1 md:col-span-2">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-slate-400">Hours:</span>
+                            <input type="number" 
+                                   class="w-full border border-slate-300 rounded p-1 text-xs font-semibold text-slate-700 text-center" 
+                                   value="${uc.hours}" 
+                                   oninput="updateUCNumerics(${uc.id}, 'hours', parseFloat(this.value) || 0)">
+                        </div>
+                    </div>
+
+                    <!-- Editable Resources -->
+                    <div class="col-span-1 md:col-span-1.5">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-slate-400">Res:</span>
+                            <input type="number" 
+                                   min="1"
+                                   class="w-full border border-slate-300 rounded p-1 text-xs font-bold text-slate-700 text-center" 
+                                   value="${uc.resources}" 
+                                   oninput="updateUCNumerics(${uc.id}, 'resources', parseInt(this.value) || 1)">
+                        </div>
+                    </div>
+
+                    <!-- Calculated Total Hours (Output-only) -->
+                    <div class="col-span-1 md:col-span-1.5 text-right px-2">
+                        <span class="text-xs text-slate-400 block text-[10px]">Total Hours</span>
+                        <span class="text-sm font-bold font-mono text-slate-900" id="uc-total-hours-lbl-${uc.id}">${computedUC_TotalHours.toFixed(1)} h</span>
+                    </div>
+
+                    <!-- Editable Roles -->
+                    <div class="col-span-1 md:col-span-2">
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-slate-400">Roles:</span>
+                            <input type="text" 
+                                   class="w-full border border-slate-300 rounded p-1 text-xs font-mono text-center text-slate-700" 
+                                   value="${uc.roles}" 
+                                   placeholder="Roles"
+                                   oninput="updateUCFieldTextOnly(${uc.id}, 'roles', this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Delete button -->
+                    <div class="col-span-1 md:col-span-1 text-right">
+                        <button onclick="deleteUseCase(${uc.id})" class="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors inline-flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // Action to toggle All table deliverables at once
+        function toggleAllTasks() {
+            allSelectedState = !allSelectedState;
+            projectData.forEach(item => {
+                if (item.type === 'item') {
+                    item.checked = allSelectedState;
+                }
+            });
+            document.getElementById('btn-toggle-all').innerText = allSelectedState ? "Unselect All Deliverables" : "Select All Deliverables";
+            renderTable();
+            calculateTotals();
+        }
+
+        // Update standard Use case size hours globals & propagate changes
+        function updateSizeHoursGlobal(size, val) {
+            const parsedVal = parseFloat(val) || 0;
+            sizeHourMap[size] = parsedVal;
+
+            customUseCases.forEach(uc => {
+                if (uc.size === size) {
+                    uc.hours = parsedVal;
+                }
+            });
+            renderUseCases();
+            calculateTotals();
+        }
+
+        function addUseCase() {
+            const nextId = customUseCases.length > 0 ? Math.max(...customUseCases.map(uc => uc.id)) + 1 : 1;
+            customUseCases.push({
+                id: nextId,
+                name: `UC${nextId}: Custom Journey Name`,
+                size: "M",
+                hours: sizeHourMap.M,
+                resources: 1,
+                roles: "OC, TA"
+            });
+            renderUseCases();
+            calculateTotals();
+        }
+
+        function deleteUseCase(id) {
+            customUseCases = customUseCases.filter(uc => uc.id !== id);
+            renderUseCases();
+            calculateTotals();
+        }
+
+        // SILENT text updates: updates variable state WITHOUT re-rendering whole blocks (stops losing cursor focus)
+        function updateUCFieldTextOnly(id, field, value) {
+            const uc = customUseCases.find(u => u.id === id);
+            if (uc) {
+                uc[field] = value;
+            }
+        }
+
+        // Numeric fields update: refreshes row values on the fly cleanly
+        function updateUCNumerics(id, field, value) {
+            const uc = customUseCases.find(u => u.id === id);
+            if (uc) {
+                uc[field] = value;
+                const totalHoursSpan = document.getElementById(`uc-total-hours-lbl-${uc.id}`);
+                if (totalHoursSpan) {
+                    totalHoursSpan.innerText = `${(uc.hours * uc.resources).toFixed(1)} h`;
+                }
+                calculateTotals();
+            }
+        }
+
+        function changeUCSize(id, size) {
+            const uc = customUseCases.find(u => u.id === id);
+            if (uc) {
+                uc.size = size;
+                uc.hours = sizeHourMap[size]; // Auto fill standard size hours
+                renderUseCases();
+                calculateTotals();
+            }
+        }
+
+        function toggleItem(id) {
+            const item = projectData.find(i => i.id === id);
+            if (item) {
+                item.checked = !item.checked;
+                calculateTotals();
+            }
+        }
+
+        // Direct total hours overwrite (if manual input overrides)
+        function updateHours(id, value) {
+            const item = projectData.find(i => i.id === id);
+            if (item) {
+                const parsedValue = parseFloat(value);
+                item.baseHours = isNaN(parsedValue) ? 0 : (parsedValue / item.resources);
+                calculateTotals();
+            }
+        }
+
+        function updateResources(id, value) {
+            const item = projectData.find(i => i.id === id);
+            if (item) {
+                const parsedValue = parseInt(value);
+                item.resources = isNaN(parsedValue) || parsedValue < 1 ? 1 : parsedValue;
+                
+                // Silent row-hours update (does not flash page or drop cursor)
+                const computedValue = item.baseHours * item.resources;
+                const hoursLabel = document.getElementById(`task-total-hours-${item.id}`);
+                if (hoursLabel) {
+                    hoursLabel.innerText = computedValue.toFixed(1);
+                }
+                calculateTotals();
+            }
+        }
+
+        // Silent text updates for table roles
+        function updateRoles(id, value) {
+            const item = projectData.find(i => i.id === id);
+            if (item) {
+                item.roles = value;
+            }
+        }
+
+        function updateImmersionHours() {
+            const days = parseFloat(document.getElementById('cfg-immersion').value) || 0;
+            const immersionItem = projectData.find(i => i.isImmersion);
+            if (immersionItem) {
+                immersionItem.baseHours = days > 0 ? (8 + (days * 16)) : 0;
+                immersionItem.resources = 1; // Locked multiplier to 1
+            }
+            renderTable(); // re-render table row labels
+            calculateTotals();
+        }
+
+        function updateHypercareHours() {
+            const weeks = parseFloat(document.getElementById('cfg-hypercare').value) || 0;
+            const hypercareItem = projectData.find(i => i.isHypercare);
+            if (hypercareItem) {
+                hypercareItem.baseHours = weeks * 16;
+                hypercareItem.resources = 1; // Locked multiplier to 1
+            }
+            renderTable(); // re-render table row labels
+            calculateTotals();
+        }
+
+        // Dynamically compute summaries & dynamic Use Case additions
+        function calculateTotals() {
+            let tableSubtotalHours = 0;
+            let hasActiveItems = false;
+
+            // 1. Calculate active tasks from the table (Base * Resources)
+            projectData.forEach(item => {
+                if (item.type === 'item' && item.checked) {
+                    tableSubtotalHours += (item.baseHours * item.resources);
+                    hasActiveItems = true;
+                }
+            });
+
+            // 2. Sum custom use cases hours multiplied by their resource counts
+            let totalUCHours = 0;
+            customUseCases.forEach(uc => {
+                totalUCHours += (uc.hours * uc.resources);
+            });
+            
+            if (customUseCases.length > 0) {
+                hasActiveItems = true; 
+            }
+
+            // Sum the task list hours + custom Use Case hours to form the Base Scope subtotal
+            const finalSubtotalHours = tableSubtotalHours + totalUCHours;
+
+            // Read settings inputs
+            const durationWeeks = parseFloat(document.getElementById('cfg-duration').value) || 0;
+            const pmPercentage = parseFloat(document.getElementById('cfg-pm-pct').value) || 0;
+            const currentRate = parseFloat(document.getElementById('cfg-rate').value) || 0;
+
+            // Recalculate PM, Alignments (3h/wk) and Steercos (4h/mo)
+            const pmHours = hasActiveItems ? (finalSubtotalHours * (pmPercentage / 100)) : 0;
+            const alignments = hasActiveItems ? (durationWeeks * 3) : 0; 
+            const steercos = hasActiveItems ? (Math.ceil(durationWeeks / 4) * 4) : 0; 
+
+            const totalHours = finalSubtotalHours + pmHours + alignments + steercos;
+            const totalCost = totalHours * currentRate;
+
+            // Update Summaries Card Labels
+            document.getElementById('summary-pm-label').innerText = `Project Management (${pmPercentage}%):`;
+            document.getElementById('summary-alignments-label').innerText = `Weekly Alignments (${durationWeeks} wks):`;
+            document.getElementById('summary-steercos-label').innerText = `Monthly Steercos (${Math.ceil(durationWeeks / 4)} mtgs):`;
+
+            // Update Summaries Card Values
+            document.getElementById('summary-subtotal').innerText = `${finalSubtotalHours.toFixed(2)} hrs`;
+            document.getElementById('summary-uc-hours').innerText = `${totalUCHours.toFixed(2)} hrs`;
+            document.getElementById('summary-pm').innerText = `${pmHours.toFixed(2)} hrs`;
+            document.getElementById('summary-alignments').innerText = `${alignments.toFixed(2)} hrs`;
+            document.getElementById('summary-steercos').innerText = `${steercos.toFixed(2)} hrs`;
+            document.getElementById('summary-total-hours').innerText = `${totalHours.toFixed(2)} hrs`;
+            document.getElementById('summary-current-rate').innerText = `€ ${currentRate.toFixed(2)}`;
+            document.getElementById('summary-total-cost').innerText = `€ ${totalCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        // Export active configuration values to a pristine, Excel-compatible CSV file
+        function exportToCSV() {
+            const rows = [];
+            
+            // Format match to original CSV headers
+            rows.push(["Program Workstream", "Type", "Activity", "Platform", "Estimation (hours)", "Resources", "Total Estimation (hours)", "Roles"]);
+
+            let subtotalHours = 0;
+
+            const immDays = document.getElementById('cfg-immersion').value;
+            const hcWeeks = document.getElementById('cfg-hypercare').value;
+
+            // Loop through selected standard tasks
+            projectData.forEach(item => {
+                if (item.type === 'header') {
+                    rows.push([item.title, "", "", "", "", "", "", ""]);
+                } else if (item.type === 'item' && item.checked) {
+                    
+                    let csvItemName = item.name;
+                    if (item.isImmersion) csvItemName = `Immersion Workshops (Prep included - ${immDays} Day${immDays > 1 ? 's' : ''})`;
+                    if (item.isHypercare) csvItemName = `Hypercare (${hcWeeks} Week${hcWeeks > 1 ? 's' : ''})`;
+
+                    rows.push([
+                        csvItemName, 
+                        item.isImmersion ? "Workshop" : "Deliverable", 
+                        item.isImmersion ? "Discovery" : "Setup", 
+                        item.platform, 
+                        item.baseHours, 
+                        item.resources, 
+                        item.baseHours * item.resources, 
+                        item.roles
+                    ]);
+                    subtotalHours += (item.baseHours * item.resources);
+                }
+            });
+
+            // Add Custom Use cases dynamically with their unique custom names!
+            if (customUseCases.length > 0) {
+                rows.push(["CAMPAIGNS & USE CASES (Custom Builders)", "", "", "", "", "", "", ""]);
+                customUseCases.forEach(uc => {
+                    rows.push([
+                        uc.name, 
+                        `Deliverable (Size ${uc.size})`, 
+                        "Campaign Execution", 
+                        "Braze", 
+                        uc.hours, 
+                        uc.resources, 
+                        uc.hours * uc.resources, 
+                        uc.roles
+                    ]);
+                    subtotalHours += (uc.hours * uc.resources);
+                });
+            }
+
+            // Calculations for CSV Bottom Meta lines
+            const durationWeeks = parseFloat(document.getElementById('cfg-duration').value) || 0;
+            const pmPercentage = parseFloat(document.getElementById('cfg-pm-pct').value) || 0;
+            const currentRate = parseFloat(document.getElementById('cfg-rate').value) || 0;
+
+            const pmHours = subtotalHours > 0 ? (subtotalHours * (pmPercentage / 100)) : 0;
+            const alignments = subtotalHours > 0 ? (durationWeeks * 3) : 0;
+            const steercos = subtotalHours > 0 ? (Math.ceil(durationWeeks / 4) * 4) : 0;
+
+            const grandTotalHours = subtotalHours + pmHours + alignments + steercos;
+            const grandTotalCost = grandTotalHours * currentRate;
+
+            // Empty row spacer
+            rows.push(["", "", "", "", "", "", "", ""]);
+
+            // Subtotal Line
+            rows.push(["Subtotal", "", "", "", subtotalHours.toFixed(2), "", subtotalHours.toFixed(2), ""]);
+
+            // Governance Lines
+            rows.push(["MANAGE - Governance", "", "", "", "", "", "", ""]);
+            rows.push([`Project Management & Account Management (${pmPercentage}%)`, "", "", "", (subtotalHours * (pmPercentage / 100)).toFixed(2), "2", pmHours.toFixed(2), "PM, AD"]);
+            rows.push([`Monthly Steercos`, "", "", "", "8", "2", steercos.toFixed(2), "PM, AD"]);
+            rows.push([`Weekly Alignment Calls`, "", "", "", "16", "3", alignments.toFixed(2), "PM, OC, TA"]);
+
+            // Final Totals matching exactly original template
+            rows.push(["Total", "", "", "", "", "", grandTotalHours.toFixed(2), "Hours"]);
+            rows.push(["", "", "", "", "", "", `€ ${grandTotalCost.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, "Euros"]);
+            rows.push(["", "", "", "", "", "", "", ""]);
+            rows.push([`Blended Hourly Rate of ${currentRate} €`, "", "", "", "", "", "", ""]);
+
+            // Convert array to CSV string
+            let csvContent = "";
+            rows.forEach(row => {
+                const formattedRow = row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",");
+                csvContent += formattedRow + "\r\n";
+            });
+
+            // CREATE BLOB with BOM characters sequence to force Excel into displaying correct UTF-8 Spanish/Special Characters (like € and accents)
+            const BOM = "\uFEFF";
+            const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            
+            // Trigger file download
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `EyeCare_Braze_Implementation_Estimation_Our_proposal.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialize App
+        renderTable();
+        renderUseCases();
+        calculateTotals();
+    </script>
+
+</body></html>
